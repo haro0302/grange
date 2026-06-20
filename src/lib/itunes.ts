@@ -17,7 +17,7 @@ const ROCK_ARTISTS = [
   'Stone Temple Pilots', 'Mudhoney', 'Hole', 'Bush',
   'Silverchair', 'Foo Fighters', 'Screaming Trees', 'Mad Season',
   'Candlebox', 'Blind Melon', 'Temple of the Dog',
-  // Alternative / post-grunge
+  // Alternative rock
   'Smashing Pumpkins', 'Rage Against the Machine', 'Beck',
   'Nine Inch Nails', 'Radiohead', 'Red Hot Chili Peppers',
   'Green Day', 'Weezer', 'Garbage', 'Soul Asylum',
@@ -26,6 +26,22 @@ const ROCK_ARTISTS = [
   'Alanis Morissette', 'Filter', 'Tool', 'Everclear',
   'Offspring', 'Sublime', 'No Doubt', 'Counting Crows',
   'Veruca Salt', 'Dinosaur Jr', 'Liz Phair',
+  // Early 90s
+  "Jane's Addiction", 'Ministry', 'Primus', 'Afghan Whigs',
+  'Babes in Toyland', 'Helmet', 'Pavement', 'Sebadoh',
+  'Belly', 'Buffalo Tom', 'Throwing Muses', 'Guided By Voices',
+  'Urge Overkill', 'Meat Puppets', 'Built to Spill',
+  'Faith No More', 'Social Distortion', 'The Replacements',
+  'Living Colour', 'My Bloody Valentine', 'Dinosaur Jr',
+  // Late 90s
+  'Matchbox Twenty', 'Third Eye Blind', 'Goo Goo Dolls',
+  'Semisonic', 'Harvey Danger', 'Our Lady Peace', 'Fastball',
+  'Incubus', 'Deftones', 'Placebo', 'Elastica', 'Oasis',
+  // 2000s
+  'The Strokes', 'The White Stripes', 'Queens of the Stone Age',
+  'System of a Down', 'Audioslave', 'Linkin Park',
+  'Jimmy Eat World', 'Default', 'Lifehouse', 'Fuel',
+  'Puddle of Mudd', 'Creed', 'Nickelback', 'Staind',
 ];
 
 async function searchByArtist(artist: string): Promise<ITunesTrack[]> {
