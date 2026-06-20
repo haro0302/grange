@@ -6,6 +6,8 @@ import YearSelector from '@/components/YearSelector';
 import TrackList from '@/components/TrackList';
 import PlayerBar from '@/components/PlayerBar';
 
+const FADE_MS = 800;
+
 function findNextPlayable(tracks: Track[], fromIndex: number): number | null {
   for (let i = fromIndex + 1; i < tracks.length; i++) {
     if (tracks[i].previewUrl) return i;
@@ -20,15 +22,28 @@ export default function Home() {
   const [error, setError] = useState<string | null>(null);
   const [currentIndex, setCurrentIndex] = useState<number | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
+
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const fadeRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  // refs to avoid stale closures in async/event handlers
+  const tracksRef = useRef<Track[]>([]);
+  const currentIndexRef = useRef<number | null>(null);
+  const isPlayingRef = useRef(false);
+  const isFadingOutRef = useRef(false);
+
+  useEffect(() => { tracksRef.current = tracks; }, [tracks]);
+  useEffect(() => { currentIndexRef.current = currentIndex; }, [currentIndex]);
+  useEffect(() => { isPlayingRef.current = isPlaying; }, [isPlaying]);
 
   useEffect(() => {
     setLoading(true);
     setError(null);
     setCurrentIndex(null);
     setIsPlaying(false);
+    stopFade();
     if (audioRef.current) {
       audioRef.current.pause();
+      audioRef.current.volume = 1;
       audioRef.current.src = '';
     }
 
@@ -47,31 +62,97 @@ export default function Home() {
       });
   }, [year]);
 
-  function playAt(index: number) {
-    const track = tracks[index];
+  function stopFade() {
+    if (fadeRef.current) {
+      clearInterval(fadeRef.current);
+      fadeRef.current = null;
+    }
+  }
+
+  function fadeOut(audio: HTMLAudioElement): Promise<void> {
+    stopFade();
+    return new Promise(resolve => {
+      if (audio.paused || audio.volume === 0) { resolve(); return; }
+      const steps = 20;
+      const stepMs = FADE_MS / steps;
+      const startVol = audio.volume;
+      let step = 0;
+      fadeRef.current = setInterval(() => {
+        step++;
+        audio.volume = Math.max(0, startVol * (1 - step / steps));
+        if (step >= steps) {
+          stopFade();
+          audio.volume = 0;
+          resolve();
+        }
+      }, stepMs);
+    });
+  }
+
+  function fadeIn(audio: HTMLAudioElement): Promise<void> {
+    stopFade();
+    audio.volume = 0;
+    return new Promise(resolve => {
+      const steps = 20;
+      const stepMs = FADE_MS / steps;
+      let step = 0;
+      fadeRef.current = setInterval(() => {
+        step++;
+        audio.volume = Math.min(1, step / steps);
+        if (step >= steps) {
+          stopFade();
+          audio.volume = 1;
+          resolve();
+        }
+      }, stepMs);
+    });
+  }
+
+  function handleTimeUpdate() {
+    const audio = audioRef.current;
+    if (!audio || !isPlayingRef.current || isFadingOutRef.current) return;
+    if (isNaN(audio.duration)) return;
+
+    const timeLeft = audio.duration - audio.currentTime;
+    if (timeLeft <= FADE_MS / 1000 + 0.1) {
+      isFadingOutRef.current = true;
+      fadeOut(audio);
+    }
+  }
+
+  async function playAt(index: number, trackList: Track[]) {
+    const track = trackList[index];
     if (!track) return;
 
     if (!track.previewUrl) {
-      const next = findNextPlayable(tracks, index);
-      if (next !== null) playAt(next);
+      const next = findNextPlayable(trackList, index);
+      if (next !== null) playAt(next, trackList);
       return;
     }
 
     const audio = audioRef.current;
     if (!audio) return;
 
+    isFadingOutRef.current = false;
+
+    if (!audio.paused) {
+      await fadeOut(audio);
+      audio.pause();
+    }
+
     audio.src = track.previewUrl;
     audio.play().catch(() => {});
     setCurrentIndex(index);
     setIsPlaying(true);
+    await fadeIn(audio);
   }
 
-  function handleTrackClick(index: number) {
+  async function handleTrackClick(index: number) {
     const audio = audioRef.current;
     if (!audio) return;
 
-    if (currentIndex === index) {
-      if (isPlaying) {
+    if (currentIndexRef.current === index) {
+      if (isPlayingRef.current) {
         audio.pause();
         setIsPlaying(false);
       } else {
@@ -81,15 +162,31 @@ export default function Home() {
       return;
     }
 
-    playAt(index);
+    await playAt(index, tracksRef.current);
   }
 
-  function handleEnded() {
-    if (currentIndex === null) return;
-    const next = findNextPlayable(tracks, currentIndex);
+  async function handleEnded() {
+    const list = tracksRef.current;
+    const idx = currentIndexRef.current;
+    if (idx === null) return;
+
+    isFadingOutRef.current = false;
+
+    const next = findNextPlayable(list, idx);
     if (next !== null) {
-      playAt(next);
+      const audio = audioRef.current;
+      const track = list[next];
+      if (!audio || !track?.previewUrl) return;
+
+      // Already faded out by timeupdate — just switch and fade in
+      audio.src = track.previewUrl;
+      audio.volume = 0;
+      audio.play().catch(() => {});
+      setCurrentIndex(next);
+      setIsPlaying(true);
+      await fadeIn(audio);
     } else {
+      if (audioRef.current) audioRef.current.volume = 1;
       setCurrentIndex(null);
       setIsPlaying(false);
     }
@@ -145,7 +242,7 @@ export default function Home() {
         />
       )}
 
-      <audio ref={audioRef} onEnded={handleEnded} />
+      <audio ref={audioRef} onEnded={handleEnded} onTimeUpdate={handleTimeUpdate} />
     </main>
   );
 }
