@@ -17,25 +17,26 @@ const GRUNGE_ARTISTS = [
   'Silverchair', 'Foo Fighters', 'Screaming Trees', 'Mad Season',
 ];
 
-async function searchByTerm(term: string): Promise<ITunesTrack[]> {
-  const url = `https://itunes.apple.com/search?term=${encodeURIComponent(term)}&entity=song&limit=50&country=US`;
+async function searchByArtist(artist: string): Promise<ITunesTrack[]> {
+  const url = `https://itunes.apple.com/search?term=${encodeURIComponent(artist)}&attribute=artistTerm&entity=song&limit=50&country=US`;
   try {
     const res = await fetch(url, { next: { revalidate: 3600 } });
     if (!res.ok) return [];
     const data = await res.json();
-    return data.results ?? [];
+    const artistLower = artist.toLowerCase();
+    return (data.results ?? []).filter(
+      (t: ITunesTrack) => t.artistName.toLowerCase() === artistLower
+    );
   } catch {
     return [];
   }
 }
 
 export async function getGrungeTracks(year: number): Promise<Track[]> {
-  const searchTerms = [...GRUNGE_ARTISTS, 'grunge'];
-
-  const allResults = await Promise.all(searchTerms.map(t => searchByTerm(t)));
+  const allResults = await Promise.all(GRUNGE_ARTISTS.map(a => searchByArtist(a)));
 
   const seenIds = new Set<number>();
-  const seenNames = new Set<string>();
+  const seenArtists = new Set<string>();
   const tracks: ITunesTrack[] = [];
 
   for (const results of allResults) {
@@ -45,11 +46,11 @@ export async function getGrungeTracks(year: number): Promise<Track[]> {
       const releaseYear = new Date(track.releaseDate).getFullYear();
       if (releaseYear !== year) continue;
 
-      const key = `${track.artistName.toLowerCase()}::${track.trackName.toLowerCase()}`;
-      if (seenNames.has(key)) continue;
+      const artistKey = track.artistName.toLowerCase();
+      if (seenArtists.has(artistKey)) continue;
 
       seenIds.add(track.trackId);
-      seenNames.add(key);
+      seenArtists.add(artistKey);
       tracks.push(track);
     }
   }
