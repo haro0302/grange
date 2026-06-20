@@ -99,10 +99,10 @@ export default function Home() {
     <main className="min-h-screen bg-grunge-bg text-grunge-text pb-24">
       <header className="border-b border-grunge-border px-6 py-5">
         <p className="text-grunge-muted font-mono text-xs tracking-widest uppercase mb-1">
-          Grunge Essentials
+          Rock Essentials 1990–2002
         </p>
         <h1 className="text-grunge-accent font-mono text-xl tracking-wide">
-          年代別グランジ名曲 Top 20
+          年代別 90sロック名曲 Top 20
         </h1>
       </header>
 

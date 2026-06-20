@@ -11,10 +11,21 @@ interface ITunesTrack {
   releaseDate: string;
 }
 
-const GRUNGE_ARTISTS = [
+const ROCK_ARTISTS = [
+  // Core grunge
   'Nirvana', 'Pearl Jam', 'Soundgarden', 'Alice in Chains',
   'Stone Temple Pilots', 'Mudhoney', 'Hole', 'Bush',
   'Silverchair', 'Foo Fighters', 'Screaming Trees', 'Mad Season',
+  'Candlebox', 'Blind Melon', 'Temple of the Dog',
+  // Alternative / post-grunge
+  'Smashing Pumpkins', 'Rage Against the Machine', 'Beck',
+  'Nine Inch Nails', 'Radiohead', 'Red Hot Chili Peppers',
+  'Green Day', 'Weezer', 'Garbage', 'Soul Asylum',
+  'Live', 'Collective Soul', 'Toadies', 'Sonic Youth',
+  'Pixies', 'PJ Harvey', 'Mazzy Star', 'The Breeders',
+  'Alanis Morissette', 'Filter', 'Tool', 'Everclear',
+  'Offspring', 'Sublime', 'No Doubt', 'Counting Crows',
+  'Veruca Salt', 'Dinosaur Jr', 'Liz Phair',
 ];
 
 async function searchByArtist(artist: string): Promise<ITunesTrack[]> {
@@ -33,7 +44,7 @@ async function searchByArtist(artist: string): Promise<ITunesTrack[]> {
 }
 
 export async function getGrungeTracks(year: number): Promise<Track[]> {
-  const allResults = await Promise.all(GRUNGE_ARTISTS.map(a => searchByArtist(a)));
+  const allResults = await Promise.all(ROCK_ARTISTS.map(a => searchByArtist(a)));
 
   const seenIds = new Set<number>();
   const seenArtists = new Set<string>();
