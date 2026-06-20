@@ -34,16 +34,22 @@ export async function getGrungeTracks(year: number): Promise<Track[]> {
 
   const allResults = await Promise.all(searchTerms.map(t => searchByTerm(t)));
 
-  const seen = new Set<number>();
+  const seenIds = new Set<number>();
+  const seenNames = new Set<string>();
   const tracks: ITunesTrack[] = [];
 
   for (const results of allResults) {
     for (const track of results) {
-      if (!track.trackId || seen.has(track.trackId)) continue;
+      if (!track.trackId || seenIds.has(track.trackId)) continue;
       if (!track.releaseDate) continue;
       const releaseYear = new Date(track.releaseDate).getFullYear();
       if (releaseYear !== year) continue;
-      seen.add(track.trackId);
+
+      const key = `${track.artistName.toLowerCase()}::${track.trackName.toLowerCase()}`;
+      if (seenNames.has(key)) continue;
+
+      seenIds.add(track.trackId);
+      seenNames.add(key);
       tracks.push(track);
     }
   }
